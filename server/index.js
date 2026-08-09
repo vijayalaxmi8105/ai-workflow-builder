@@ -10,7 +10,7 @@ const ADMIN_SECRET = process.env.HASURA_ADMIN_SECRET;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 async function gql(query, variables) {
-  console.log('DEBUG fetch type:', typeof globalThis.fetch, 'HASURA_URL:', HASURA_URL); const res = await globalThis.fetch(HASURA_URL, {
+  const res = await globalThis.fetch(HASURA_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
