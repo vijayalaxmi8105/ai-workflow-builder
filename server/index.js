@@ -379,6 +379,57 @@ app.post('/approveStep', async (req, res) => {
   }
 });
 
+
+// ---- Webhook Trigger Endpoint ----
+app.post('/webhookTrigger/:workflow_id', async (req, res) => {
+  try {
+    const workflowId = req.params.workflow_id;
+    const providedSecret = req.headers['x-webhook-secret'];
+    if (!providedSecret) return res.status(401).json({ message: 'Missing X-Webhook-Secret header' });
+
+    const data = await gql(`
+      query($workflow_id: uuid!) {
+        workflow_triggers(where: {workflow_id: {_eq: $workflow_id}, type: {_eq: "webhook"}}) { id config }
+      }
+    `, { workflow_id: workflowId });
+
+    const trigger = data.workflow_triggers[0];
+    if (!trigger) return res.status(404).json({ message: 'No webhook trigger configured for this workflow' });
+
+    const expectedSecret = trigger.config && trigger.config.secret;
+    if (!expectedSecret || providedSecret !== expectedSecret) {
+      return res.status(403).json({ message: 'Invalid webhook secret' });
+    }
+
+    const ownerData = await gql(`
+      query($workflow_id: uuid!) {
+        workflows_by_pk(id: $workflow_id) {
+          organization { org_members(where: {role: {_in: ["owner", "editor"]}}, limit: 1) { user_id } }
+        }
+      }
+    `, { workflow_id: workflowId });
+
+    const workflow = ownerData.workflows_by_pk;
+    if (!workflow) return res.status(404).json({ message: 'Workflow not found' });
+    const member = workflow.organization.org_members[0];
+    if (!member) return res.status(400).json({ message: 'No eligible member to attribute this run to' });
+
+    const port = process.env.PORT || 4000;
+    const triggerRes = await globalThis.fetch(`http://localhost:${port}/triggerWorkflowRun`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_variables: { 'x-hasura-user-id': member.user_id },
+        input: { workflow_id: workflowId, triggered_via: 'webhook' },
+      }),
+    });
+    const result = await triggerRes.json();
+    res.status(triggerRes.status).json(result);
+  } catch (err) {
+    console.error('webhookTrigger error:', err);
+    if (!res.headersSent) res.status(500).json({ message: err.message });
+  }
+});
 app.listen(process.env.PORT || 4000, () => {
   console.log(`Server running on port ${process.env.PORT || 4000}`);
 });
