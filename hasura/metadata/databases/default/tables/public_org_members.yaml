@@ -1,0 +1,68 @@
+table:
+  name: org_members
+  schema: public
+object_relationships:
+  - name: app_user
+    using:
+      foreign_key_constraint_on: user_id
+  - name: organization
+    using:
+      foreign_key_constraint_on: org_id
+insert_permissions:
+  - role: owner
+    permission:
+      check:
+        organization:
+          org_members:
+            user_id:
+              _eq: X-Hasura-User-Id
+      columns:
+        - org_id
+        - user_id
+        - role
+select_permissions:
+  - role: editor
+    permission:
+      columns: '*'
+      filter:
+        _exists:
+          _table:
+            name: org_members
+            schema: public
+          _where:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - org_id:
+                  _ceq:
+                    - org_id
+  - role: owner
+    permission:
+      columns: '*'
+      filter:
+        _exists:
+          _table:
+            name: org_members
+            schema: public
+          _where:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - org_id:
+                  _ceq:
+                    - org_id
+  - role: viewer
+    permission:
+      columns: '*'
+      filter:
+        _exists:
+          _table:
+            name: org_members
+            schema: public
+          _where:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - org_id:
+                  _ceq:
+                    - org_id

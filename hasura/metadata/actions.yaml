@@ -1,0 +1,18 @@
+actions:
+  - name: approveStep
+    definition:
+      kind: synchronous
+      handler: http://localhost:4000/approveStep
+      forward_client_headers: true
+  - name: triggerWorkflowRun
+    definition:
+      kind: synchronous
+      handler: http://localhost:4000/triggerWorkflowRun
+      forward_client_headers: true
+custom_types:
+  enums: []
+  input_objects: []
+  objects:
+    - name: TriggerWorkflowRunOutput
+    - name: ApproveStepOutput
+  scalars: []
