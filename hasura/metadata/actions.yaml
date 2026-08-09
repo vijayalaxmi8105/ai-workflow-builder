@@ -2,13 +2,19 @@ actions:
   - name: approveStep
     definition:
       kind: synchronous
-      handler: http://localhost:4000/approveStep
+      handler: http://172.18.0.1:4000/approveStep
       forward_client_headers: true
+    permissions:
+      - role: editor
+      - role: owner
   - name: triggerWorkflowRun
     definition:
       kind: synchronous
-      handler: http://localhost:4000/triggerWorkflowRun
+      handler: http://172.18.0.1:4000/triggerWorkflowRun
       forward_client_headers: true
+    permissions:
+      - role: editor
+      - role: owner
 custom_types:
   enums: []
   input_objects: []
