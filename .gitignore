@@ -1,5 +1,4 @@
+.nhost
+.secrets
 node_modules/
 .env
-.env.local
-*.log
-hasura/.env
