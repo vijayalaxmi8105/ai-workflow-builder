@@ -17,11 +17,16 @@ insert_permissions:
   - role: editor
     permission:
       check:
-        workflow:
-          organization:
-            org_members:
-              user_id:
-                _eq: X-Hasura-User-Id
+        _and:
+          - workflow:
+              organization:
+                org_members:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+          - type:
+              _nin:
+                - db_write
+                - notify
       columns:
         - workflow_id
         - step_order
