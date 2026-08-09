@@ -3,6 +3,14 @@ console.log("fetch check at startup:", typeof globalThis.fetch);
 require('dotenv').config();
 
 const app = express();
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+});
 app.use(express.json());
 
 const HASURA_URL = process.env.HASURA_GRAPHQL_URL;
@@ -372,6 +380,12 @@ app.post('/approveStep', async (req, res) => {
         update_workflow_runs_by_pk(pk_columns: {id: $id}, _set: {status: "completed", finished_at: "now()"}) { id }
       }
     `, { id: runId });
+
+    await gql(`
+      mutation($org_id: uuid!) {
+        update_organizations_by_pk(pk_columns: {id: $org_id}, _inc: {quota_calls_used: 1}) { id }
+      }
+    `, { org_id: stepRun.workflow_run.workflow.org_id });
 
   } catch (err) {
     console.error('approveStep error:', err);
