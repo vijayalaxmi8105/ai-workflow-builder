@@ -25,6 +25,7 @@ async function gql(query, variables) {
     headers: {
       'Content-Type': 'application/json',
       'X-Hasura-Admin-Secret': ADMIN_SECRET,
+      'ngrok-skip-browser-warning': 'true',
     },
     body: JSON.stringify({ query, variables }),
   });
