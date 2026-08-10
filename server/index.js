@@ -101,6 +101,67 @@ async function executeStep(step, previousOutput) {
   }
 }
 
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// ---- Login (dev-auth: email only, no password — see README for rationale) ----
+app.post('/login', async (req, res) => {
+  try {
+    const { email, org_id } = req.body;
+    if (!email) return res.status(400).json({ message: 'email is required' });
+
+    const userData = await gql(`
+      query($email: String!) {
+        app_users(where: {email: {_eq: $email}}) {
+          id
+          email
+          name
+          org_members {
+            org_id
+            role
+            organization { name }
+          }
+        }
+      }
+    `, { email });
+
+    const user = userData.app_users[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.org_members.length === 0) {
+      return res.status(400).json({ message: 'User has no org memberships' });
+    }
+
+    const membership = org_id
+      ? user.org_members.find(m => m.org_id === org_id)
+      : user.org_members[0];
+
+    if (!membership) {
+      return res.status(403).json({ message: 'User is not a member of that organization' });
+    }
+
+    const token = jwt.sign({
+      sub: user.id,
+      email: user.email,
+      'https://hasura.io/jwt/claims': {
+        'x-hasura-allowed-roles': [membership.role],
+        'x-hasura-default-role': membership.role,
+        'x-hasura-user-id': user.id,
+        'x-hasura-org-id': membership.org_id,
+      },
+    }, JWT_SECRET, { expiresIn: '12h' });
+
+    res.json({
+      token,
+      user: { id: user.id, email: user.email, name: user.name },
+      org: { id: membership.org_id, role: membership.role, name: membership.organization.name },
+      available_orgs: user.org_members.map(m => ({ id: m.org_id, name: m.organization.name, role: m.role })),
+    });
+  } catch (err) {
+    console.error('login error:', err);
+    if (!res.headersSent) res.status(500).json({ message: err.message });
+  }
+});
+
 // ---- triggerWorkflowRun Action ----
 app.post('/triggerWorkflowRun', async (req, res) => {
   try {

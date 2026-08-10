@@ -22,6 +22,8 @@ services:
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       HASURA_GRAPHQL_DEV_MODE: "true"
       HASURA_GRAPHQL_ADMIN_SECRET: myadminsecret123
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256","key":"ff65e625165095ceacad37c40e74e480ba8359267d1deeb462d60351ab8a9b61","claims_namespace":"https://hasura.io/jwt/claims"}'
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: anonymous
 
 volumes:
   db_data:
