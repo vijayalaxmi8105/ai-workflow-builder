@@ -36,7 +36,7 @@ export default function WorkflowsPage() {
     }
   }, [loading, user, org, router]);
 
-  const { data, loading: queryLoading, error, refetch } = useQuery(GET_ORG_WORKFLOWS, {
+  const { data, loading: queryLoading, error, refetch } = useQuery<{ workflows: Workflow[]; organizations_by_pk: { quota_calls_used: number; quota_calls_allowed: number } | null }>(GET_ORG_WORKFLOWS, {
     variables: { org_id: org?.id },
     skip: !org,
     pollInterval: 5000,
