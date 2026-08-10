@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 console.log("fetch check at startup:", typeof globalThis.fetch);
 require('dotenv').config();
 
@@ -11,6 +12,7 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);
 });
+app.use(cors());
 app.use(express.json());
 
 const HASURA_URL = process.env.HASURA_GRAPHQL_URL;
