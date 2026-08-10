@@ -57,7 +57,8 @@ async function retryable(fn, attempts = 2) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     try {
-      return await fn();
+      const value = await fn();
+      return { value, attempts: i + 1 };
     } catch (err) {
       lastErr = err;
       console.log(`Attempt ${i + 1} failed:`, err.message);
@@ -71,16 +72,16 @@ async function executeStep(step, previousOutput) {
   switch (step.type) {
     case 'llm_call': {
       const prompt = (config.prompt || 'Say hello') + (previousOutput ? `\nPrevious step output: ${JSON.stringify(previousOutput)}` : '');
-      const result = await retryable(() => callLLM(prompt));
-      return { output: result };
+      const { value: result, attempts } = await retryable(() => callLLM(prompt));
+      return { output: result, attempts };
     }
     case 'http_request': {
       const url = config.url || 'https://official-joke-api.appspot.com/random_joke';
-      const result = await retryable(async () => {
+      const { value: result, attempts } = await retryable(async () => {
         const res = await globalThis.fetch(url);
         return res.json();
       });
-      return { output: result };
+      return { output: result, attempts };
     }
     case 'db_write': {
       return { output: { saved: true, data: previousOutput } };
@@ -268,11 +269,12 @@ app.post('/triggerWorkflowRun', async (req, res) => {
       try {
         const result = await executeStep(step, previousOutput);
         previousOutput = result.output;
+        const attemptCount = result.attempts || 1;
         await gql(`
-          mutation($id: uuid!, $output: jsonb!) {
-            update_step_runs_by_pk(pk_columns: {id: $id}, _set: {status: "success", output: $output}) { id }
+          mutation($id: uuid!, $output: jsonb!, $attempts: Int!) {
+            update_step_runs_by_pk(pk_columns: {id: $id}, _set: {status: "success", output: $output, attempt_count: $attempts}) { id }
           }
-        `, { id: stepRunId, output: result.output });
+        `, { id: stepRunId, output: result.output, attempts: attemptCount });
       } catch (err) {
         await gql(`
           mutation($id: uuid!, $error: String!) {
