@@ -39,3 +39,52 @@ export const TRIGGER_WORKFLOW_RUN = gql`
     }
   }
 `;
+
+export const GET_WORKFLOW_DETAIL = gql`
+  query GetWorkflowDetail($workflow_id: uuid!) {
+    workflows_by_pk(id: $workflow_id) {
+      id
+      name
+      created_at
+      workflow_steps(order_by: { step_order: asc }) {
+        id
+        type
+        step_order
+      }
+      workflow_runs(order_by: { started_at: desc }, limit: 1) {
+        id
+        status
+        started_at
+        finished_at
+      }
+    }
+  }
+`;
+
+export const STEP_RUNS_SUBSCRIPTION = gql`
+  subscription StepRunsForRun($workflow_run_id: uuid!) {
+    step_runs(
+      where: { workflow_run_id: { _eq: $workflow_run_id } }
+      order_by: { started_at: asc }
+    ) {
+      id
+      step_id
+      status
+      input
+      output
+      error
+      approved_by
+      approved_at
+      started_at
+      finished_at
+    }
+  }
+`;
+
+export const APPROVE_STEP = gql`
+  mutation ApproveStep($step_run_id: uuid!) {
+    approveStep(step_run_id: $step_run_id) {
+      status
+    }
+  }
+`;

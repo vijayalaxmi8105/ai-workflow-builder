@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
@@ -25,9 +25,11 @@ export default function Home() {
     }
   }
 
-  if (user && org) {
-    router.push('/workflows');
-  }
+  useEffect(() => {
+    if (user && org) {
+      router.push('/workflows');
+    }
+  }, [user, org, router]);
 
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
